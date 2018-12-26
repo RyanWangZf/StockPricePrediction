@@ -145,19 +145,14 @@ class LSTM_model(object):
 
         h = LSTM(32,return_sequences=True)(x)
         h = Dropout(0.2)(h)
-        h = LSTM(64,return_sequences=True)(h)
-        h = Dropout(0.2)(h)
-        h = LSTM(128,return_sequences=False)(h)
-        h = Dropout(0.2)(h)
+        h = LSTM(64,return_sequences=False)(h)
 
         h = Dense(64)(h)
         h = BN()(h)
-        h = LeakyReLU()(h)
         h = Dropout(0.5)(h)
 
         h = Dense(32)(h)
         h = BN()(h)
-        h = LeakyReLU()(h)
         h = Dropout(0.5)(h)
 
         h = Dense(1,use_bias=False)(h)
@@ -255,19 +250,18 @@ class LSTM_model(object):
         plt.legend()
         plt.savefig("./evaluation/pred.png",dpi=300)
         plt.show()
-        pdb.set_trace()
 
         return y_pred
 
 def main():
     "set params"
-    timestep = 20
+    timestep = 5
 
     "load train & test"
     db = dbloader("./dataset/training_data")
-    _,df_train = db.load("600000","20080101","20080401")
+    _,df_train = db.load("600000","20080101","20080201")
     _,df_valid = db.load("600000","20080602","20080701")
-    _,df_test  = db.load("600000","20080501","20080510")
+    _,df_test  = db.load("600000","20080202","20080210")
     
     "select col from raw data"
     cols = ["Closing Price"]
@@ -293,10 +287,8 @@ def main():
     
     "build LSTM model"
     model = LSTM_model(timestep=timestep)
-    model.fit(x_train,y_train,epochs=100,batch_size=512,x_valid=x_val,y_valid=y_val)
+    model.fit(x_train,y_train,epochs=50,batch_size=512,x_valid=x_val,y_valid=y_val)
     y_pred = model.eval_and_plot(x_test,y_test,df_test,batch_size=32,scaler=scaler)
-    pdb.set_trace()
-
 
 if __name__ == "__main__":
     main()
