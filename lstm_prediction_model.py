@@ -14,18 +14,16 @@ import pdb
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
+import time
 # customized data loader
 from dbloader import dbloader
 
 from keras.layers import LSTM,Dense,Layer,Input, Activation
 from keras import backend as K
 from keras.layers import BatchNormalization,LeakyReLU,Dropout
-from keras.models import Sequential,Model
-
+from keras.models import Sequential,Model,load_model
+from keras.utils.vis_utils import plot_model
 from sklearn.preprocessing import MinMaxScaler
-
-
 
 class data_pipeline:
     """
@@ -132,7 +130,9 @@ class CustomLoss(Layer):
 
 
 class LSTM_model(object):
-    def __init__(self,timestep=3):
+    def __init__(self,timestep=3,model_name="model"):
+        self.model_name = model_name
+        self.timestep = timestep
         return
 
     def inference(self):
@@ -143,15 +143,15 @@ class LSTM_model(object):
         
         x = Input(shape=(timestep,data_dim),name="main_input")
 
-        h = LSTM(32,return_sequences=True)(x)
+        h = LSTM(64,return_sequences=True)(x)
         h = Dropout(0.2)(h)
-        h = LSTM(64,return_sequences=False)(h)
+        h = LSTM(128,return_sequences=False)(h)
 
-        h = Dense(64)(h)
+        h = Dense(32)(h)
         h = BN()(h)
         h = Dropout(0.5)(h)
 
-        h = Dense(32)(h)
+        h = Dense(16)(h)
         h = BN()(h)
         h = Dropout(0.5)(h)
 
@@ -176,27 +176,33 @@ class LSTM_model(object):
             res = model.fit(x,y,epochs=epochs,batch_size=batch_size,verbose=1,shuffle=False)
         
         # show training process
-        """
+        
         val_loss = res.history["val_loss"]
         train_loss = res.history["loss"]
         plt.plot(val_loss,label="val loss")
         plt.plot(train_loss,label="train loss")
         plt.legend()
+        plt.savefig("./image/"+ self.model_name+"_training.png",dpi=300)
         plt.show()
-        """
 
         # link op
-        self.model = model
-        
-    
+        self.lstm_model = model
+
     def eval(self,x_test,y_test,batch_size=32):
         "use trained model "
         return self.model.evaluate(x_test,y_test,batch_size=batch_size)
     
-    def predict(self,x):
-        pred = self.model.predict(x)
+    def predict(self,x,batch_size):
+        pred = self.lstm_model.predict(x,batch_size=batch_size)
+        return pred
+    
+    def save_model(self,name="model"):
+        name = "./ckpt/" + name + ".h5"
+        self.lstm_model.save(name)
 
-        return self.model.predict(x,batch_size=batch_size)
+    def load_model(self,name="model"):
+        name = "./ckpt/" + name + ".h5"
+        self.lstm_model = load_model(name)
 
     def eval_and_plot(self,x,y,df_test,batch_size=1,scaler=None):
         """
@@ -205,7 +211,6 @@ class LSTM_model(object):
         y: pd.Series
         """
         print("*" * 20)
-        print("evaluate and plot predictions...")
         # get dates list, predict on each data
 
         dates = [d.strftime("%Y%m%d") for d in y.index.normalize().unique()]
@@ -219,10 +224,10 @@ class LSTM_model(object):
             x_pred_1 = x[indx[sl_1]]
             x_pred_2 = x[indx[sl_2]]
             pred_1 = raw_price_1 + pd.Series(
-                self.model.predict(
+                self.predict(
                     x_pred_1,batch_size=batch_size).flatten()).cumsum().values
             pred_2 = raw_price_2 + pd.Series(
-                self.model.predict(
+                self.predict(
                     x_pred_2,batch_size=batch_size).flatten()).cumsum().values
             y_true_1 = raw_price_1 + y.loc[y.index[sl_1]].cumsum().values
             y_true_2 = raw_price_2 + y.loc[y.index[sl_2]].cumsum().values
@@ -248,20 +253,31 @@ class LSTM_model(object):
         plt.plot(y_true.values,label="real")
         plt.plot(y_pred.values,label="pred")
         plt.legend()
-        plt.savefig("./evaluation/pred.png",dpi=300)
+        plt.savefig("./image/evaluation.png",dpi=300)
         plt.show()
 
         return y_pred
 
-def main():
+def training_model(stock_id="600000",epoch=30,batch_size=16,
+    train_date=["20080101","20080201"],
+    valid_date=["20080202","20080301"],
+    test_date=["20080202","20080301"],
+    model_name="model"):
+    """
+    model training pipeline
+    training model on given interval
+    validate on next month
+    test on next month
+    """
+
     "set params"
-    timestep = 5
+    timestep = 3
 
     "load train & test"
     db = dbloader("./dataset/training_data")
-    _,df_train = db.load("600000","20080101","20080201")
-    _,df_valid = db.load("600000","20080602","20080701")
-    _,df_test  = db.load("600000","20080202","20080210")
+    _,df_train = db.load(stock_id,train_date[0],train_date[1])
+    _,df_valid = db.load(stock_id,valid_date[0],valid_date[1])
+    _,df_test  = db.load(stock_id,test_date[0],test_date[1])
     
     "select col from raw data"
     cols = ["Closing Price"]
@@ -286,9 +302,27 @@ def main():
     x_test,y_test = data_test.create_dataset(fit_scaler=False)
     
     "build LSTM model"
-    model = LSTM_model(timestep=timestep)
-    model.fit(x_train,y_train,epochs=50,batch_size=512,x_valid=x_val,y_valid=y_val)
-    y_pred = model.eval_and_plot(x_test,y_test,df_test,batch_size=32,scaler=scaler)
+    lstm_model = LSTM_model(timestep=timestep,model_name=model_name)
+    # do not set too large batch size (>64)
+    
+    lstm_model.fit(x_train,y_train,epochs=epoch,batch_size=batch_size,x_valid=x_val,y_valid=y_val)
+    plot_model(lstm_model.lstm_model,
+        to_file="./image/model.png",show_shapes=True,show_layer_names=False)
+    
+    # evaluate on model
+    y_pred = lstm_model.eval_and_plot(x_test,y_test,df_test,batch_size=4,scaler=scaler)
+    
+    # save model, use model.load_model(model_name) to load model
+    lstm_model.save_model(model_name)
+    
+
+def main():
+    # DEFINE training plan
+    training_model("600000",epoch=50,batch_size=256,train_date=["20091101","20091130"],
+        valid_date=["20091001","20091031"],
+        test_date=["20091001","20091031"],model_name="model_600000_1_2")
+
+
 
 if __name__ == "__main__":
     main()
