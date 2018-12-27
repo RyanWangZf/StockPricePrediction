@@ -1,10 +1,16 @@
 ## required packages
+### Public
 pandas  
-numpy  
+numpy 
+
+### Minute model
 keras  
 tensorflow  
 sklearn  
 graphviz  
+
+### Day model
+fbprophet  
 
 # demo
 a demo of stock price prediction based on LSTM model.  
@@ -26,7 +32,7 @@ python lstm_prediction_model.py
 ### eval result
 <img src="https://github.com/RyanWangZf/StockPricePrediction/raw/master/image/pred.png" width=375>  
 
-##demo-2
+## demo-2
 ### eval result
 <img src="https://github.com/RyanWangZf/StockPricePrediction/raw/master/image/evaluation.png" width=375>  
 
