@@ -8,6 +8,7 @@ Author:@Zifeng
 import os
 import pdb
 import pandas as pd
+import numpy as np
 
 import datetime
 
@@ -31,6 +32,30 @@ class dbloader:
             df.between_time("13:00","15:00")],axis=0)
         df_nonull = df1.dropna(how="all")
         return df1,df_nonull
+    
+    def load_day(self,stock_code="600000",start_date="20080101",end_date="20080105"):
+        _,df = self.load(stock_code,start_date,end_date) 
+        dates = [d.strftime("%Y%m%d") for d in df.index.normalize().unique()]
+        dates2 =[[pd.to_datetime(d+"0930"),pd.to_datetime(d+"1301")] for d in dates]
+        dates2 = np.array(dates2).flatten().tolist()
+        df_day = df.reindex(dates2)
+        return df_day
+    
+    def load_day_m(self,stock_code="600000",start_date="20080101",end_date="20080105"):
+        "load every day morning opening price"
+        _,df = self.load(stock_code,start_date,end_date) 
+        dates = [d.strftime("%Y%m%d") for d in df.index.normalize().unique()]
+        dates2 =[pd.to_datetime(d+"0930") for d in dates]
+        df_day = df.reindex(dates2)
+        return df_day
+
+    def load_day_a(self,stock_code="600000",start_date="20080101",end_date="20080105"):
+        "load every day afternoon opening price"
+        _,df = self.load(stock_code,start_date,end_date) 
+        dates = [d.strftime("%Y%m%d") for d in df.index.normalize().unique()]
+        dates2 =[pd.to_datetime(d+"1301") for d in dates]
+        df_day = df.reindex(dates2)
+        return df_day
 
     def get_date_list(self,start_date,end_date):
         start = datetime.datetime.strptime(start_date,"%Y%m%d")
@@ -41,6 +66,7 @@ def main():
     db = dbloader()
     _,df = db.load("600000","20080101","20080201")
     print(df)
+    _,df = db.load_day("600000","20080101","20080301")
     pdb.set_trace()
     
 
