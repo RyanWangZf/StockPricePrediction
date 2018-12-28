@@ -49,7 +49,7 @@ def training_model(stock_id="600000",
 
     # build model
     model = Prophet(n_changepoints = 25,
-        changepoint_range=0.8,changepoint_prior_scale=0.05,daily_seasonality=False,
+        changepoint_range=0.8,changepoint_prior_scale=0.01,daily_seasonality=False,
         weekly_seasonality=True,yearly_seasonality=False,
         seasonality_mode="additive",seasonality_prior_scale=0.01,mcmc_samples=0,
         uncertainty_samples=1000)
@@ -99,8 +99,8 @@ def training_model(stock_id="600000",
 
 def main():
     codes = get_stock_codes()
-    training_model(codes[0],train_date=["20080101","20090301"],
-        valid_date=["20090302","20090401"],
+    training_model(codes[0],train_date=["20080101","20091101"],
+        valid_date=["20091102","20091130"],
         test_date=["20091002","20091101"])
 
 
