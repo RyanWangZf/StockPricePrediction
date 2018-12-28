@@ -97,7 +97,7 @@ class data_pipeline:
     def get_shift_target_diff(self,df,shift=1,feature_list=[]):
         ft_name = "price_diff_{}_shift".format(shift)
         feature_list.append(ft_name)
-        df[ft_name] = df["Closing Price"].shift(1).diff(1)
+        df[ft_name] = df["Closing Price"].shift(shift).diff(1)
         return df
     
     def feature_engineering(self):
@@ -318,7 +318,7 @@ def training_model(stock_id="600000",epoch=30,batch_size=16,
 
 def main():
     # DEFINE training plan
-    training_model("600000",epoch=50,batch_size=256,train_date=["20091101","20091130"],
+    training_model("600000",epoch=60,batch_size=256,train_date=["20091101","20091130"],
         valid_date=["20091001","20091031"],
         test_date=["20091001","20091031"],model_name="model_600000_1_2")
 
