@@ -39,7 +39,7 @@ Search for significant stock pairs, saved under `./rule/trade_rule.csv` runing: 
 ### Public ###
 numpy,pandas,matplotlib  
 ### In Task1 ###
-**day_model.py**: fbprophet  
+**day_model.py**: fbprophet==0.3.post2  
 **minute_model.py**: keras, tensorflow, sklearn  
 
 ### In Task2 ###
