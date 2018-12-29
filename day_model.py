@@ -27,7 +27,6 @@ def df_wrapper(df,log=False,diff=False):
     else:
         return df,None
 
-
 def training_model(stock_id="600000",
     train_date=["20080101","20080201"],
     valid_date=["20080202","20080301"],
@@ -51,16 +50,16 @@ def training_model(stock_id="600000",
     model = Prophet(n_changepoints = 25,
         changepoint_range=0.8,changepoint_prior_scale=0.01,daily_seasonality=False,
         weekly_seasonality=True,yearly_seasonality=False,
-        seasonality_mode="additive",seasonality_prior_scale=0.01,mcmc_samples=0,
+        seasonality_mode="additive",seasonality_prior_scale=0.005,mcmc_samples=0,
         uncertainty_samples=1000)
     # add seasonality
     model.add_seasonality(name="monthly",period=30,fourier_order=5)
-    model.add_seasonality(name="dualmonthly",period=60,fourier_order=5)
-    model.add_seasonality(name="quarterly",period=90,fourier_order=5)
+    model.add_seasonality(name="dualmonthly",period=60,fourier_order=10)
+    model.add_seasonality(name="quarterly",period=90,fourier_order=15)
     # add holiday
     # model.add_country_holidays(country_name="US")
     model.fit(df_train)
-    future = model.make_future_dataframe(freq="D",periods=40,include_history=False)
+    future = model.make_future_dataframe(freq="D",periods=30,include_history=False)
     pred = model.predict(future)
     ypred = pd.Series(pred.yhat.values,index=pred.ds)
     ytrue = pd.Series(df_valid.y.values,index=df_valid.ds)
@@ -99,8 +98,8 @@ def training_model(stock_id="600000",
 
 def main():
     codes = get_stock_codes()
-    training_model(codes[0],train_date=["20080101","20091101"],
-        valid_date=["20091102","20091130"],
+    training_model(codes[0],train_date=["20080101","20090901"],
+        valid_date=["20090902","20091001"],
         test_date=["20091002","20091101"])
 
 
