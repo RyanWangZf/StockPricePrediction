@@ -1,4 +1,4 @@
-# Stockprice Prediction & Trading Strategy # 
+# Stockprice Prediction & Arbitrage Trading # 
 ## Attention ##
 As the datasets are too large, we do not upload them on github, u can find a sample of datafile what we use under the `./dataset/training_data/600000.csv`.
  
